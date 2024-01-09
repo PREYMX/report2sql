@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Optional
 
 import sqlalchemy.engine
-from sqlalchemy import create_engine
+from  sqlalchemy.engine import create_engine
+from sqlalchemy.sql import insert
 import pandas as pd
-from openpyxl import load_workbook
 from report2sql.core.models import metadata_obj
 
 
@@ -91,12 +91,28 @@ class Report2SQLApp:
             print(data)
 
     def xmls2sql(self):
+        def insert_on_conflict_nothing(table, conn, keys, data_iter):
+            # "a" is the primary key in "conflict_table"
+            data = [dict(zip(keys, row)) for row in data_iter]
+            stmt = insert(table.table).values(data).on_conflict_do_nothing(index_elements=["a"])
+            result = conn.execute(stmt)
+            return result.rowcount
+
         xml_files = self.get_excel_files()
 
         for xml_file in xml_files:
-            xml_dataframe = pd.ExcelFile(xml_file)
-            print(xml_dataframe)
-            # xls_content = load_workbook(str(xml_file))
+            try:
+                # TODO agregar on conflict
+                xml_dataframe = pd.read_excel(xml_file)
+                xml_dataframe.to_sql(
+                    name=self.config["connection"]["table"],
+                    con=self.get_engine(),
+                    if_exists="append",
+                    index=False
+                )
+            except PermissionError as e:
+                # TODO controlas excepcion
+                continue
 
 
 if __name__ == "__main__":

@@ -1,20 +1,20 @@
-from sqlalchemy import MetaData, Table, Column, BigInteger,Integer, String, DateTime, Float
+from sqlalchemy import MetaData, Table, Column, BigInteger,Integer, String, DateTime, Float, PrimaryKeyConstraint
 
 metadata_obj = MetaData()
 
 
 arkikAnalizeReportsModel = Table(
 	"arkikAnalizeReports", metadata_obj,
-	Column("arkikAnalizeReportsID", BigInteger, primary_key=True),
-	Column("Fecha de Ticket", DateTime, nullable=False),
-	Column("Número de Pedido", String, nullable=False),
+	Column("RowVersion", BigInteger, autoincrement=True, index=True),
+	Column("Fecha de Ticket", DateTime, nullable=False, primary_key=True),
+	Column("Número de Pedido", String(15), nullable=False, primary_key=True),
 	Column("Código de Cliente", String, nullable=False),
 	Column("Nombre de Cliente", String, nullable=False),
 	Column("RFC", String, nullable=True),
 	Column("Código de Obra", String, nullable=True),
 	Column("Nombre de Obra", String, nullable=True),
 	Column("Tipo de Envío", String, nullable=True),
-	Column("Número de Carga", String, nullable=True),
+	Column("Número de Carga", String(15), nullable=False, primary_key=True),
 	Column("Planta", String, nullable=True),
 	Column("Nombre de Planta", String, nullable=True),
 	Column("Estatus de la orden", String, nullable=True),
@@ -51,6 +51,7 @@ arkikAnalizeReportsModel = Table(
 	Column("Hora Salida a Planta", DateTime, nullable=True),
 	Column("Duración hacia Planta", Float, nullable=True),
 	Column("Hora Llegada a Planta", DateTime, nullable=True),
-	Column("Tiempo de Ciclo", Float, nullable=True)
+	Column("Tiempo de Ciclo", Float, nullable=True),
+	PrimaryKeyConstraint("Fecha de Ticket", "Número de Pedido", "Número de Carga", name="aar_pk")
 )
 
