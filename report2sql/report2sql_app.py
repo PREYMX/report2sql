@@ -14,13 +14,17 @@ class Report2SQLApp:
 
         # run tasks
         self.task_at_start()
-        self.get_sql_test()
+        # self.get_sql_test()
 
     def task_at_start(self):
         # TODO check files
-
+        # load toml config
         with open(str(self.TOML_FILE), "rb") as config_file:
             self.config = tomllib.load(config_file)
+
+        # check paths
+        Path(self.config["config"]["ruta_reportes_nuevos"]).mkdir(parents=True, exist_ok=True)
+        Path(self.config["config"]["ruta_reportes_procesados"]).mkdir(parents=True, exist_ok=True)
 
     def get_files(self):
         self.excel_files.clear()
