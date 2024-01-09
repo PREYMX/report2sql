@@ -5,8 +5,8 @@ from typing import Optional
 import sqlalchemy.engine
 from sqlalchemy import create_engine
 import pandas as pd
-
-from report2sql.core.models import arkikAnalizeReportsMeta
+from openpyxl import load_workbook
+from report2sql.core.models import metadata_obj
 
 
 class Report2SQLApp:
@@ -14,7 +14,6 @@ class Report2SQLApp:
         # default var
         self.TOML_FILE: Path = Path(__file__).parent.joinpath("r2s_config.toml")
         self.config: Optional[dict] = None
-        self.excel_files: list = []
 
         # run tasks
         self.task_at_start()
@@ -30,13 +29,18 @@ class Report2SQLApp:
         Path(self.config["config"]["ruta_reportes_nuevos"]).mkdir(parents=True, exist_ok=True)
         Path(self.config["config"]["ruta_reportes_procesados"]).mkdir(parents=True, exist_ok=True)
 
-        #
+        # Create tables
+        metadata_obj.create_all(self.get_engine())
 
-    def get_files(self):
-        self.excel_files.clear()
+        # load xmls to sql
+        self.xmls2sql()
+
+    def get_excel_files(self):
+        excel_files = []
         # if self.config["config"]["ruta_absoluta"]:
         get_from_dir: Path = Path(self.config["config"]["ruta_reportes_nuevos"])
-        self.excel_files.extend(get_from_dir.glob("*.xls?"))
+        excel_files.extend(get_from_dir.glob("*.xls?"))
+        return excel_files
 
     def get_engine(self) -> sqlalchemy.engine.Engine:
         str_driver = r"Driver={0};".format(
@@ -56,11 +60,11 @@ class Report2SQLApp:
         )
         conn_str = f"{str_driver}{str_server}{str_database}{str_user}{str_psw}"
         conn_string = r"mssql+pyodbc:///?odbc_connect={}".format(conn_str)
-        return create_engine(conn_string)
+        return create_engine(conn_string, echo=True)
 
-    def create_table(self):
+    def create_tables(self):
         engine = self.get_engine()
-        arkikAnalizeReportsMeta.create_all(engine)
+        metadata_obj.create_all(engine)
 
     def get_sql_test(self):
         str_driver = r"Driver={0};".format(
@@ -86,12 +90,16 @@ class Report2SQLApp:
             data = pd.read_sql_table("ListaEmpresas", conn)
             print(data)
 
+    def xmls2sql(self):
+        xml_files = self.get_excel_files()
 
-
-
+        for xml_file in xml_files:
+            xml_dataframe = pd.ExcelFile(xml_file)
+            print(xml_dataframe)
+            # xls_content = load_workbook(str(xml_file))
 
 
 if __name__ == "__main__":
     app = Report2SQLApp()
-    app.get_files()
-    print(app.excel_files)
+    app.get_excel_files()
+
