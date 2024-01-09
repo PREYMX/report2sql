@@ -4,7 +4,7 @@ server_instancename = '.\COMPAC17'
 database = "COMSP_CAYCO"
 username = "sa"
 use_trusted_connection = false
-psw = "Q09OVFBBUWkxLg=="
+psw = "CONTPAQi1."
 table = "arkikAnalizeReports"
 
 [config]
