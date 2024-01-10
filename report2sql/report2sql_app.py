@@ -94,12 +94,15 @@ class Report2SQLApp:
 
     def xmls2sql(self):
         def insert_on_conflict_nothing(table, conn, keys, data_iter):
+            # TODO AGREGAR ROW COUNT return result.rowcount
             # "a" is the primary key in "conflict_table"
             data = [dict(zip(keys, row)) for row in data_iter]
-            stmt = insert(table.table).values(data)
-            # stmt = insert(table.table).values(data).on_conflict_do_nothing(index_elements=["a"])
-            result = conn.execute(stmt)
-            return result.rowcount
+            for r_dict in data:
+                try:
+                    stmt = insert(table.table).values([r_dict])
+                    result = conn.execute(stmt)
+                except IntegrityError:
+                    continue
 
         xml_files = self.get_excel_files()
 
