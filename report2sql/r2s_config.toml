@@ -8,6 +8,5 @@ password = "CONTPAQi1."
 table = "arkikAnalizeReports"
 
 [config]
-ruta_absoluta = true
 ruta_reportes_nuevos = 'C:\Compac\ComercialSP\Reportes'
 ruta_reportes_procesados = 'C:\Compac\ComercialSP\Reportes\procesados'

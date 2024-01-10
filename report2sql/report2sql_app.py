@@ -7,6 +7,7 @@ from sqlalchemy.engine import create_engine
 from sqlalchemy.sql import insert
 from sqlalchemy.exc import IntegrityError
 from loguru import logger
+from shutil import move
 
 import pandas as pd
 from report2sql.core.models import metadata_obj
@@ -94,8 +95,17 @@ class Report2SQLApp:
             data = pd.read_sql_table("ListaEmpresas", conn)
             print(data)
 
-    def processed_file(self):
-        pass
+    def move2processed(self, file_path: Path):
+        try:
+            move(str(file_path),
+                 self.config["config"]["ruta_reportes_procesados"])
+            logger.info(f"{file_path.stem}: Se movio a procesados")
+        except KeyError as e:
+            logger.error(f"{type(e)}: {e}")
+            return
+        except Exception as e:
+            logger.error(f"{type(e)}: {e}")
+            return
 
     def xmls2sql(self):
         def insert_on_conflict_nothing(table, conn, keys, data_iter):
@@ -113,6 +123,7 @@ class Report2SQLApp:
         xml_files = self.get_excel_files()
 
         for xml_file in xml_files:
+            process_error: bool = False
             try:
                 xml_dataframe = pd.read_excel(xml_file)
                 xml_dataframe.to_sql(
@@ -122,12 +133,19 @@ class Report2SQLApp:
                     index=False,
                     method=insert_on_conflict_nothing
                 )
+                if not process_error:
+                    self.move2processed(xml_file)
 
             except PermissionError as e:
+                process_error = True
                 logger.error(f"{e}")
                 continue
             except TypeError as e:
+                process_error = True
                 logger.error(f"{xml_file}: {e}")
+                continue
+            finally:
+                pass
 
 
 if __name__ == "__main__":
