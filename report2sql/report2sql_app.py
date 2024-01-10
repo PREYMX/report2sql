@@ -3,8 +3,10 @@ from pathlib import Path
 from typing import Optional
 
 import sqlalchemy.engine
-from  sqlalchemy.engine import create_engine
+from sqlalchemy.engine import create_engine
 from sqlalchemy.sql import insert
+from sqlalchemy.exc import IntegrityError
+
 import pandas as pd
 from report2sql.core.models import metadata_obj
 
@@ -94,7 +96,8 @@ class Report2SQLApp:
         def insert_on_conflict_nothing(table, conn, keys, data_iter):
             # "a" is the primary key in "conflict_table"
             data = [dict(zip(keys, row)) for row in data_iter]
-            stmt = insert(table.table).values(data).on_conflict_do_nothing(index_elements=["a"])
+            stmt = insert(table.table).values(data)
+            # stmt = insert(table.table).values(data).on_conflict_do_nothing(index_elements=["a"])
             result = conn.execute(stmt)
             return result.rowcount
 
@@ -108,7 +111,8 @@ class Report2SQLApp:
                     name=self.config["connection"]["table"],
                     con=self.get_engine(),
                     if_exists="append",
-                    index=False
+                    index=False,
+                    method=insert_on_conflict_nothing
                 )
             except PermissionError as e:
                 # TODO controlas excepcion
