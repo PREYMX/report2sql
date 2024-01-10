@@ -6,6 +6,7 @@ import sqlalchemy.engine
 from sqlalchemy.engine import create_engine
 from sqlalchemy.sql import insert
 from sqlalchemy.exc import IntegrityError
+from loguru import logger
 
 import pandas as pd
 from report2sql.core.models import metadata_obj
@@ -16,6 +17,7 @@ class Report2SQLApp:
         # default var
         self.TOML_FILE: Path = Path(__file__).parent.joinpath("r2s_config.toml")
         self.config: Optional[dict] = None
+        logger.add("r2s_log.log")
 
         # run tasks
         self.task_at_start()
@@ -92,6 +94,9 @@ class Report2SQLApp:
             data = pd.read_sql_table("ListaEmpresas", conn)
             print(data)
 
+    def processed_file(self):
+        pass
+
     def xmls2sql(self):
         def insert_on_conflict_nothing(table, conn, keys, data_iter):
             # TODO AGREGAR ROW COUNT return result.rowcount
@@ -101,14 +106,14 @@ class Report2SQLApp:
                 try:
                     stmt = insert(table.table).values([r_dict])
                     result = conn.execute(stmt)
-                except IntegrityError:
+                except IntegrityError as e:
+                    logger.info(f"{e.orig}")
                     continue
 
         xml_files = self.get_excel_files()
 
         for xml_file in xml_files:
             try:
-                # TODO agregar on conflict
                 xml_dataframe = pd.read_excel(xml_file)
                 xml_dataframe.to_sql(
                     name=self.config["connection"]["table"],
@@ -117,12 +122,14 @@ class Report2SQLApp:
                     index=False,
                     method=insert_on_conflict_nothing
                 )
+
             except PermissionError as e:
-                # TODO controlas excepcion
+                logger.error(f"{e}")
                 continue
+            except TypeError as e:
+                logger.error(f"{xml_file}: {e}")
 
 
 if __name__ == "__main__":
     app = Report2SQLApp()
-    app.get_excel_files()
 
