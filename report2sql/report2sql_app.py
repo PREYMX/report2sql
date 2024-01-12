@@ -1,6 +1,7 @@
 import tomllib
 from pathlib import Path
 from shutil import move
+from sys import exit as sys_exit
 from typing import Optional
 
 import pandas as pd
@@ -22,13 +23,20 @@ class Report2SQLApp:
 
         # run tasks
         self.task_at_start()
-        # self.get_sql_test()
 
     def task_at_start(self):
         # TODO check files
         # load toml config
-        with open(str(self.TOML_FILE), "rb") as config_file:
-            self.config = tomllib.load(config_file)
+        while True:
+            try:
+                with open(str(self.TOML_FILE), "rb") as config_file:
+                    self.config = tomllib.load(config_file)
+                    break
+            except FileNotFoundError as e:
+                input(f"No se encontró: {self.TOML_FILE}")
+                continue
+            except KeyboardInterrupt as e:
+                sys_exit(0)
 
         # check paths
         Path(self.config["config"]["ruta_reportes_nuevos"]).mkdir(parents=True, exist_ok=True)
