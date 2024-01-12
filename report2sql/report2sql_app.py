@@ -1,15 +1,15 @@
 import tomllib
 from pathlib import Path
+from shutil import move
 from typing import Optional
 
-import sqlalchemy.engine
-from sqlalchemy.engine import create_engine
-from sqlalchemy.sql import insert
-from sqlalchemy.exc import IntegrityError
-from loguru import logger
-from shutil import move
-
 import pandas as pd
+import sqlalchemy.engine
+from loguru import logger
+from sqlalchemy.engine import create_engine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import insert
+
 from report2sql.core.models import metadata_obj
 
 
