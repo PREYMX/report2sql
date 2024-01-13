@@ -1,4 +1,6 @@
+import msvcrt
 import tomllib
+from os import remove as os_remove
 from pathlib import Path
 from shutil import move
 from sys import exit as sys_exit
@@ -157,5 +159,15 @@ class Report2SQLApp:
 
 
 if __name__ == "__main__":
+    try:
+        lock_file = Path(__file__).parent.joinpath("report2sql_app.lock").__str__()
+        lock_fd = open(lock_file, "w")
+        msvcrt.locking(lock_fd.fileno(), msvcrt.LK_NBLCK, 1)
+    except IOError as e:
+        print("Ya hay una instancia en ejecucción")
+        sys_exit(0)
+
     app = Report2SQLApp()
+    lock_fd.close()
+    os_remove(lock_file)
 
