@@ -219,16 +219,17 @@ class Report2SQLApp:
 
 
 if __name__ == "__main__":
+    lock_file = Path(__file__).parent.joinpath("report2sql_app.lock").__str__()
+    lock_fd = open(lock_file, "w")
+    msvcrt.locking(lock_fd.fileno(), msvcrt.LK_NBLCK, 1)
     try:
-        lock_file = Path(__file__).parent.joinpath("report2sql_app.lock").__str__()
-        lock_fd = open(lock_file, "w")
-        msvcrt.locking(lock_fd.fileno(), msvcrt.LK_NBLCK, 1)
+        # start app
+        app = Report2SQLApp()
+        app.task_at_start()
     except IOError as e:
         print("Ya hay una instancia en ejecucción")
         sys_exit(0)
-
-    app = Report2SQLApp()
-    app.task_at_start()
-    lock_fd.close()
-    os_remove(lock_file)
+    finally:
+        lock_fd.close()
+        os_remove(lock_file)
 
