@@ -1,10 +1,13 @@
+[app]
+config_mode = false
+
 [connection]
 odbc_driver = "ODBC Driver 17 for SQL Server"
 server_instancename = '.\COMPAC17'
-database = "COMSP_CAYCO"
+database = "master"
 username = "sa"
 use_trusted_connection = false
-password = "CONTPAQi1."
+password = "Sistemas1."
 table = "arkikAnalizeReports"
 
 [config]

@@ -23,11 +23,21 @@ class Report2SQLApp:
         self.config: Optional[dict] = None
         logger.add("r2s_log.log")
 
-        # run tasks
-        self.task_at_start()
-
     def task_at_start(self):
-        # TODO check files
+        # call setuo
+        self.setup_app()
+
+        # check paths
+        Path(self.config["config"]["ruta_reportes_nuevos"]).mkdir(parents=True, exist_ok=True)
+        Path(self.config["config"]["ruta_reportes_procesados"]).mkdir(parents=True, exist_ok=True)
+
+        # Create tables
+        metadata_obj.create_all(self.get_engine())
+
+        # load xmls to sql
+        self.xmls2sql()
+
+    def load_config(self):
         # load toml config
         while True:
             try:
@@ -39,16 +49,65 @@ class Report2SQLApp:
                 continue
             except KeyboardInterrupt as e:
                 sys_exit(0)
+            except tomllib.TOMLDecodeError as err:
+                logger.error(f"Archivo TOML: {err.args[0]}")
+                sys_exit(0)
 
-        # check paths
-        Path(self.config["config"]["ruta_reportes_nuevos"]).mkdir(parents=True, exist_ok=True)
-        Path(self.config["config"]["ruta_reportes_procesados"]).mkdir(parents=True, exist_ok=True)
+    def setup_app(self):
+        # exist TOML?
+        while not self.TOML_FILE.exists():
+            input(f"No existe el archivo de configuración:\n{self.TOML_FILE}")
+        print("TOML: OK")
 
-        # Create tables
-        metadata_obj.create_all(self.get_engine())
+        # load config
+        self.load_config()
 
-        # load xmls to sql
-        self.xmls2sql()
+        # validate schema
+        while True:
+            match self.config:
+                case {
+                    "app": {"config_mode": bool()},
+                    "connection": {
+                        "odbc_driver": str(),
+                        "server_instancename": str(),
+                        "database": str(),
+                        "username": str(),
+                        "use_trusted_connection": bool(),
+                        "password": str(),
+                        "table": str()
+                    },
+                    "config": {
+                        "ruta_reportes_nuevos": str(),
+                        "ruta_reportes_procesados": str()
+                    }
+                }:
+                    print("TOML SCHEMA: OK")
+                    break
+                case _:
+                    try:
+                        raise ValueError(f"TOML schema invalido")
+                    except ValueError as err:
+                        input(f"{err}")
+                        continue
+
+        # check config mode
+        if not self.config["app"]["config_mode"]:
+            return
+
+        # test engine
+        while True:
+            engine = self.get_sql_test()
+
+            try:
+                with engine.connect():
+                    print("CONEXION: OK")
+                    break
+            except Exception as err:
+                input(f"Error en datos de conexion:")
+                continue
+
+        input("Si todo ha ido bien establece config_mode a False")
+        sys_exit(0)
 
     def get_excel_files(self):
         excel_files = []
@@ -101,9 +160,7 @@ class Report2SQLApp:
         conn_string = r"mssql+pyodbc:///?odbc_connect={}".format(conn_str)
         engine = create_engine(conn_string)
 
-        with engine.connect() as conn, conn.begin():
-            data = pd.read_sql_table("ListaEmpresas", conn)
-            print(data)
+        return engine
 
     def move2processed(self, file_path: Path):
         try:
@@ -129,6 +186,9 @@ class Report2SQLApp:
                 except IntegrityError as e:
                     logger.info(f"{e.orig}")
                     continue
+                except sqlalchemy.exc.ProgrammingError as err:
+                    logger.error(f"{err.args}")
+                    sys_exit(0)
 
         xml_files = self.get_excel_files()
 
@@ -168,6 +228,7 @@ if __name__ == "__main__":
         sys_exit(0)
 
     app = Report2SQLApp()
+    app.task_at_start()
     lock_fd.close()
     os_remove(lock_file)
 
